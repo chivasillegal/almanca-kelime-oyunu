@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almanca Kelime Oyunu</title>
+<style>
+/* Genel stil */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: url('https://images.pexels.com/photos/2387877/pexels-photo-2387877.jpeg') no-repeat center center fixed;
+  background-size: cover;
+  color: white;
+}
+
+/* Arka plan karartması */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  z-index: -1;
+}
+
+/* Başlık */
+header {
+  padding: 15px;
+  font-size: 22px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+header img { width: 50px; margin-right: 10px; }
+
+/* Kelime sorusu */
+#question {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 20px 0 10px 0;
+  text-align: center;
+  background-color: rgba(0,0,0,0.4);
+  padding: 10px 15px;
+  border-radius: 8px;
+}
+
+/* Input */
+#answer {
+  padding: 12px;
+  font-size: 20px;
+  width: 90%;
+  max-width: 300px;
+  border-radius: 5px;
+  border: none;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* Butonlar */
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+button {
+  padding: 12px;
+  font-size: 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+}
+#sendBtn { background-color: #4CAF50; color: white; }
+#passBtn { background-color: gold; color: black; }
+
+/* Sonuç yazısı alanı */
+.result {
+  font-size: 22px;
+  font-weight: bold;
+  margin: 10px 0;
+  height: 30px;
+  text-align: center;
+}
+
+/* Skor */
+.scoreList {
+  font-size: 20px;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  background-color: rgba(0,0,0,0.4);
+  padding: 10px 15px;
+  border-radius: 8px;
+}
+
+/* Mobil ve masaüstü uyumlu */
+@media(min-width: 768px) {
+  #answer { width: 300px; }
+  button { width: 120px; }
+  .scoreList { width: 300px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <img src="https://upload.wikimedia.org/wikipedia/en/b/ba/Flag_of_Germany.svg" alt="Almanya Bayrağı">
+  Almanca Kelime Oyunu
+</header>
+
+<p id="question">Kelime: </p>
+
+<input type="text" id="answer" placeholder="Türkçesini yaz...">
+
+<div class="button-container">
+  <button id="sendBtn" onclick="checkAnswer()">Gönder</button>
+  <button id="passBtn" onclick="passWord()">PAS</button>
+</div>
+
+<div class="result" id="result"></div>
+
+<div class="scoreList">
+  <div id="correct"><strong>✅ Doğru: </strong><span id="correctCount">0</span></div>
+  <div id="wrong"><strong>❌ Yanlış: </strong><span id="wrongCount">0</span></div>
+  <div id="passed"><strong>🟡 Pas: </strong><span id="passCount">0</span></div>
+</div>
+
+<script>
+// Türkçe karakterleri normalize eden fonksiyon
+function normalizeTr(text) {
+  return text
+    .toLowerCase()
+    .replace(/ı/g, 'i')
+    .replace(/İ/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/Ş/g, 's')
+    .replace(/ç/g, 'c')
+    .replace(/Ç/g, 'c')
+    .replace(/ğ/g, 'g')
+    .replace(/Ğ/g, 'g')
+    .replace(/ö/g, 'o')
+    .replace(/Ö/g, 'o')
+    .replace(/ü/g, 'u')
+    .replace(/Ü/g, 'u');
+}
+
+// Kelime listesi (senin uzun liste buraya eklendi)
+const words = [
+  { de: "ab", tr: "itibaren" },
+  { de: "aber", tr: "ama" },
+  { de: "abfahren", tr: "hareket etmek, kalkmak" },
+  { de: "die Abfahrt", tr: "kalkış" },
+  { de: "abgeben", tr: "vermek, uzatmak" },
+  { de: "abholen", tr: "almak" },
+  { de: "der Absender", tr: "gönderen" },
+  { de: "Achtung", tr: "dikkat" },
+  { de: "die Adresse,-en", tr: "adres" },
+  { de: "all-", tr: "tüm, hepsi, her şey" },
+  { de: "allein", tr: "yalnız" },
+  { de: "also", tr: "o halde, bu yüzden" },
+  { de: "alt", tr: "yaşlı, eski" },
+  { de: "das Alter", tr: "yaş" },
+  { de: "anbieten", tr: "teklif etmek" },
+  { de: "das Angebot, -e", tr: "teklif" },
+  { de: "ander", tr: "diğer, başka" },
+  { de: "anfangen", tr: "başlamak" },
+  { de: "der Anfang", tr: "başlangıç" },
+  { de: "anklicken", tr: "tıklamak" },
+  { de: "ankommen", tr: "varmak" },
+  { de: "die Ankunft", tr: "varış" },
+  { de: "ankreuzen", tr: "işaretlemek" },
+  { de: "anmachen", tr: "açmak (elektronik)" },
+  { de: "(sich) anmelden", tr: "kayıt olmak" },
+  { de: "die Anmeldung", tr: "kayıt" },
+  { de: "die Anrede", tr: "hitap" },
+  { de: "anrufen", tr: "aramak (telefon)" },
+  { de: "der Anruf, -e", tr: "telefon görüşmesi" },
+  { de: "die Ansage, -n", tr: "duyuru" },
+  { de: "der Anschluss", tr: "bağlantı" },
+  { de: "an sein", tr: "açık olmak" },
+  { de: "antworten", tr: "yanıtlamak" },
+  { de: "die Antwort, -en", tr: "yanıt" },
+  { de: "die Anzeige, -n", tr: "ilan" },
+  { de: "(sich) anziehen", tr: "giyinmek" },
+  { de: "das Apartment, -s", tr: "daire, apartman" },
+  { de: "der Apfel, -..", tr: "elma" },
+  { de: "der Appetit", tr: "iştah" },
+  { de: "arbeiten", tr: "çalışmak" },
+  { de: "die Arbeit, -en", tr: "iş" },
+  { de: "arbeitslos", tr: "işsiz" },
+  { de: "der Arbeitsplatz, -..", tr: "iş yeri" },
+  { de: "der Arm, -e", tr: "kol" },
+  { de: "der Arzt, -.. e", tr: "doktor" },
+  { de: "auch", tr: "ayrıca, -de/da" },
+  { de: "auf", tr: "üzerinde, -de/da" },
+  { de: "die Aufgabe, -n", tr: "görev" },
+  { de: "aufhören", tr: "durmak, sona ermek" },
+  { de: "auf sein", tr: "açık olmak" },
+  { de: "aufstehen", tr: "kalkmak, uyanmak" },
+  { de: "der Aufzug, -..e", tr: "asansör" },
+  { de: "das Auge, -n", tr: "göz" },
+  { de: "aus", tr: "dışında, -den/dan" },
+  { de: "der Ausflug", tr: "gezi" },
+  { de: "ausfüllen", tr: "doldurmak" },
+  { de: "der Ausgang", tr: "çıkış" },
+  { de: "die Auskunft, ...e", tr: "bilgi" },
+  { de: "das Ausland", tr: "yurt dışı" },
+  { de: "der Ausländer, -", tr: "yabancı" },
+  { de: "ausländisch", tr: "yabancı" },
+  { de: "ausmachen", tr: "kapatmak" },
+  { de: "die Aussage, -n", tr: "ifade, beyan" },
+  { de: "aussehen", tr: "görünmek" },
+  { de: "aus sein", tr: "kapalı olmak" },
+  { de: "aussteigen", tr: "inmek (araçtan)" },
+  { de: "der Ausweis", tr: "kimlik kartı" },
+  { de: "(sich) ausziehen", tr: "soyunmak" },
+  { de: "das Auto, -s", tr: "otomobil, araba" },
+  { de: "die Autobahn, -en", tr: "otoyol" },
+  { de: "der Automat", tr: "otomat" },
+  { de: "automatisch", tr: "otomatik" },
+  { de: "das Baby, -s", tr: "bebek" },
+  { de: "die Bäckerei", tr: "fırın" },
+  { de: "das Bad", tr: "banyo" },
+  { de: "baden", tr: "banyo yapmak" },
+  { de: "die Bahn", tr: "tren" },
+  { de: "der Bahnhof", tr: "tren istasyonu" },
+  { de: "der Bahnsteig", tr: "peron" },
+  { de: "bald", tr: "yakında" },
+  { de: "der Balkon", tr: "balkon" },
+  { de: "die Banane, -п", tr: "muz" },
+  { de: "die Bank", tr: "banka" },
+  { de: "bar", tr: "nakit" },
+  { de: "der Bauch", tr: "karın" },
+  { de: "der Baum, -ä,", tr: "ağaç" },
+  { de: "der Beamte, -n", tr: "memur" },
+  { de: "bedeuten", tr: "anlamına gelmek" },
+  { de: "beginnen", tr: "başlamak" },
+  { de: "bei", tr: "yanında, sırasında, -da/da, civarında" },
+  { de: "beide", tr: "her ikisi" },
+  { de: "das Bein, -e", tr: "bacak" },
+  { de: "das Beispiel, -e", tr: "örnek" },
+  { de: "zum Beispiel z. B.", tr: "örneğin" },
+  { de: "bekannt", tr: "bilinen, tanınan" },
+  { de: "der/die Bekannte, -n", tr: "tanıdık" },
+  { de: "bekommen", tr: "almak" },
+  { de: "benutzen", tr: "kullanmak" },
+  { de: "der Beruf, -e", tr: "meslek" },
+  { de: "besetzt", tr: "meşgul" },
+  { de: "besichtigen", tr: "gezmek, incelemek" },
+  { de: "besser", tr: "daha iyi" },
+  { de: "best-", tr: "en iyi" },
+  { de: "bestellen", tr: "sipariş etmek" },
+  { de: "besuchen", tr: "ziyaret etmek" },
+  { de: "das Bett, -en", tr: "yatak" },
+  { de: "bezahlen", tr: "ödemek" },
+  { de: "das Bild, -er", tr: "resim" },
+  { de: "billig", tr: "ucuz" },
+  { de: "die Birne, -n", tr: "armut" },
+  { de: "bis", tr: "kadar, -e kadar" },
+  { de: "bisschen", tr: "biraz" },
+  { de: "bitte", tr: "lütfen" },
+  { de: "die Bitte, -n", tr: "rica" },
+  { de: "bitten", tr: "rica etmek, rica ederek istemek" },
+  { de: "bitter", tr: "aci" },
+  { de: "bleiben", tr: "kalmak" },
+  { de: "der Bleistift, -e", tr: "kurşun kalem" },
+  { de: "der Blick", tr: "bakış" },
+  { de: "die Blume, -n", tr: "çiçek" },
+  { de: "der Bogen", tr: "yay" },
+  { de: "böse", tr: "kötü, kızgın" },
+  { de: "brauchen", tr: "ihtiyaç duymak, lazım olmak" },
+  { de: "breit", tr: "geniş" },
+  { de: "der Brief, -e", tr: "mektup" }
+];
+
+let current = 0;
+let correctCount = 0;
+let wrongCount = 0;
+let passCount = 0;
+
+const question = document.getElementById("question");
+const result = document.getElementById("result");
+const answerInput = document.getElementById("answer");
+const correctSpan = document.getElementById("correctCount");
+const wrongSpan = document.getElementById("wrongCount");
+const passSpan = document.getElementById("passCount");
+
+function showQuestion() {
+  const random = Math.floor(Math.random() * words.length);
+  current = random;
+  question.textContent = `Kelime: ${words[current].de}`;
+  result.textContent = "";
+  answerInput.value = "";
+  answerInput.focus();
+}
+
+function checkAnswer() {
+  const answer = normalizeTr(answerInput.value.trim());
+  const correct = normalizeTr(words[current].tr);
+  if (correct.split(',').some(t => answer.includes(t.trim()))) {
+    result.textContent = "✅ Doğru!";
+    result.style.color = "lightgreen";
+    correctCount++;
+    correctSpan.textContent = correctCount;
+  } else {
+    result.textContent = `❌ Yanlış! Doğru cevap: ${words[current].tr}`;
+    result.style.color = "orange";
+    wrongCount++;
+    wrongSpan.textContent = wrongCount;
+  }
+  setTimeout(showQuestion, 1500);
+}
+
+answerInput.addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    checkAnswer();
+  }
+});
+
+function passWord() {
+  result.textContent = `🟡 Pas! Cevap: ${words[current].tr}`;
+  result.style.color = "yellow";
+  passCount++;
+  passSpan.textContent = passCount;
+  setTimeout(showQuestion, 1500);
+}
+
+showQuestion();
+</script>
+
+</body>
+</html>
